@@ -10,7 +10,7 @@
 
 ret_code_t amiibo_helper_load_keys(const uint8_t* data);
 bool amiibo_helper_is_key_loaded();
-void amiibo_helper_try_load_amiibo_keys_from_vfs();
+void amiibo_helper_try_load_amiibo_keys();
 //随机uuid并重新签名amiibo
 ret_code_t amiibo_helper_rand_amiibo_uuid(ntag_t* ntag);
 //根据head和tail生成ntag数据

@@ -25,12 +25,12 @@ static void amiibo_scene_storage_list_on_selected(mui_list_view_event_t event, m
 
         if (p_item->icon == ICON_DRIVE) {
             if (p_driver->mounted()) {
-                amiibo_helper_try_load_amiibo_keys_from_vfs();
+                amiibo_helper_try_load_amiibo_keys();
                 mui_scene_dispatcher_next_scene(p_app->p_scene_dispatcher, AMIIBO_SCENE_FILE_BROWSER);
             } else {
                 int32_t err = p_driver->mount();
                 if (err == VFS_OK) {
-                    amiibo_helper_try_load_amiibo_keys_from_vfs();
+                    amiibo_helper_try_load_amiibo_keys();
                     mui_scene_dispatcher_next_scene(p_app->p_scene_dispatcher, AMIIBO_SCENE_FILE_BROWSER);
                 }
             }

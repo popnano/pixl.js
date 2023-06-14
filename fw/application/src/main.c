@@ -270,7 +270,7 @@ int main(void) {
     settings_data_t *p_settings = settings_get_data();
     nrf_pwr_mgmt_set_timeout(p_settings->sleep_timeout_sec);
 
-    amiibo_helper_try_load_amiibo_keys_from_vfs();
+    amiibo_helper_try_load_amiibo_keys();
 
     NRF_LOG_DEBUG("init done");
 

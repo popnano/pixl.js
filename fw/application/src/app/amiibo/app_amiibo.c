@@ -21,12 +21,10 @@ static void app_amiibo_on_event(mini_app_inst_t *p_app_inst, mini_app_event_t *p
 
 static void app_amiibo_try_mount_drive(app_amiibo_t *p_app_inst) {
     vfs_driver_t *p_driver = vfs_get_driver(p_app_inst->current_drive);
-    if (p_driver->mounted()) {
-        amiibo_helper_try_load_amiibo_keys_from_vfs();
-    } else {
+    if (!p_driver->mounted()) {
         int32_t err = p_driver->mount();
-        amiibo_helper_try_load_amiibo_keys_from_vfs();
     }
+    amiibo_helper_try_load_amiibo_keys();
 }
 
 void app_amiibo_on_run(mini_app_inst_t *p_app_inst) {

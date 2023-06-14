@@ -6,11 +6,10 @@
  */
 
 #include "ntag_store.h"
-//#include "fds.h"
 #include "nrf_log.h"
 #include "utils.h"
 
-#include "vfs.h"
+#define STORAGE_VFS
 
 const ntag_t default_ntag215 = {
     .data = {0x04, 0x68, 0x95, 0x71, 0xfa, 0x5c, 0x64, 0x80, 0x42, 0x48, 0x00, 0x00, 0xe1,
@@ -60,18 +59,14 @@ const ntag_t default_ntag215 = {
 ret_code_t ntag_store_generate(uint8_t idx, ntag_t *ntag) {
     memcpy(ntag, &default_ntag215, sizeof(ntag_t));
     ntag->data[7] = idx;
-    //ntag->index = idx;
     // BCC 0 is always equal to UID0 ⊕ UID 1 ⊕ UID 2 ⊕ 0x88
-    // ntag->data[3] = ntag->data[0] ^ ntag->data[1] ^ ntag->data[2] ^ 0x88;
+    ntag->data[3] = ntag->data[0] ^ ntag->data[1] ^ ntag->data[2] ^ 0x88;
     // BCC 1 is always equal to UID3 ⊕ UID 4 ⊕ UID 5 ⊕ UID6
     ntag->data[8] = ntag->data[4] ^ ntag->data[5] ^ ntag->data[6] ^ ntag->data[7];
     return NRF_SUCCESS;
 }
 
-
-
 ret_code_t ntag_store_uuid_rand(ntag_t *ntag) {
-
     int8_t uuid[6];
 
     ret_code_t err_code = utils_rand_bytes(uuid, sizeof(uuid));
@@ -98,6 +93,8 @@ void ntag_store_new_rand(ntag_t* ntag){
 }
 
 #ifdef STORAGE_FDS
+
+#include "fds.h"
 
 static volatile bool m_fds_ready =
     false; /**< Flag used to indicate that FDS initialization is finished. */
@@ -320,85 +317,53 @@ static ret_code_t fds_wait_ready() {
 
 #endif
 
-#ifdef STORAGE_LFS
+#ifdef STORAGE_VFS
 
-#include "lfs.h"
-#include "lfs_port.h"
-
-#define FILE_MAX_PATH 16
+#include "vfs.h"
 
 #define NTAG_STORAGE_NOT_FOUND 10000
 #define NTAG_STORAGE_READ_ERROR 10001
 #define NTAG_STORAGE_WRITE_ERROR 10002
-#define NTAG_STORAGE_READ_CORRUPT 10003
 
-ret_code_t ntag_store_init() { return NRF_SUCCESS; }
+static vfs_driver_t * p_driver;
 
-void ntag_store_format_path(uint8_t idx, char *path) {
-    sprintf(path, "amiibo/%02d.bin", idx);
-}
-
-ret_code_t ntag_store_read(uint8_t idx, ntag_t *ntag) {
-    char path[FILE_MAX_PATH];
-    lfs_file_t file;
-
-    ntag_store_format_path(idx, path);
-    int err = lfs_file_open(&lfs, &file, path, LFS_O_RDONLY);
-    NRF_LOG_INFO("lfs_file_open: %d", err);
-    if (err == LFS_ERR_NOENT) {
+ret_code_t ntag_store_init() {
+    p_driver = vfs_get_driver(VFS_DRIVE_EXT);
+    if(p_driver == NULL) {
         return NTAG_STORAGE_NOT_FOUND;
-    } else if (err) {
-        return NTAG_STORAGE_READ_ERROR;
     }
-
-    err = lfs_file_read(&lfs, &file, ntag->data, 540);
-    NRF_LOG_INFO("lfs_file_read: %d", err);
-
-    if (err < 540) {
-        lfs_file_close(&lfs, &file);
-        return NTAG_STORAGE_READ_CORRUPT;
-    }
-
-    lfs_file_close(&lfs, &file);
-    ntag->size = 540;
-    ntag->type = NTAG_215;
-    ntag->index = 0;
-}
-
-ret_code_t ntag_store_write(uint8_t idx, ntag_t *ntag) {
-    char path[FILE_MAX_PATH];
-    lfs_file_t file;
-
-    ntag_store_format_path(idx, path);
-    int err = lfs_file_open(&lfs, &file, path, LFS_O_WRONLY | LFS_O_CREAT);
-    if (err) {
-        return NTAG_STORAGE_WRITE_ERROR;
-    }
-
-    if (lfs_file_write(&lfs, &file, ntag->data, 540) < 540) {
-        lfs_file_close(&lfs, &file);
-        return NTAG_STORAGE_WRITE_ERROR;
-    }
-
-    lfs_file_close(&lfs, &file);
-
+    p_driver->create_dir("/amiibolink");
     return NRF_SUCCESS;
 }
 
-ret_code_t ntag_store_read_default(uint8_t idx, ntag_t *ntag) {
-    char path[16];
-    ret_code_t err = ntag_store_read(idx, ntag);
-    NRF_LOG_INFO("read ntag: %d", idx);
-    if (err == NTAG_STORAGE_NOT_FOUND || err == NTAG_STORAGE_READ_CORRUPT) {
-        NRF_LOG_INFO("generate ntag: %d", idx);
-        ntag_store_generate(idx, ntag);
-        return ntag_store_write(idx, ntag);
-    }
-
-    return err;
+void ntag_store_format_path(uint8_t idx, char *path) {
+    sprintf(path, "/amiibolink/%02d.bin", idx);
 }
-ret_code_t ntag_store_write_with_gc(uint8_t idx, ntag_t *ntag) {
-    return ntag_store_write(idx, ntag);
+
+int32_t ntag_store_load_keys(const uint8_t *data) {
+    return p_driver->read_file_data("/key_retail.bin", data, 160);
+}
+
+ret_code_t ntag_store_read(uint8_t idx, ntag_t *ntag) {
+    char path[VFS_MAX_PATH_LEN] = {0};
+    ntag_store_format_path(idx, path);
+    
+    int32_t err = p_driver->read_file_data(path, ntag->data, NTAG_DATA_SIZE);
+    if (err >= NTAG_DATA_SIZE) {
+        return NTAG_STORAGE_READ_ERROR;
+    }
+    return NRF_SUCCESS;
+}
+
+ret_code_t ntag_store_write(uint8_t idx, ntag_t *ntag) {
+    char path[VFS_MAX_PATH_LEN] = {0};
+    ntag_store_format_path(idx, path);
+
+    int32_t err = p_driver->write_file_data(path, ntag->data, NTAG_DATA_SIZE);
+    if (err) {
+        return NTAG_STORAGE_WRITE_ERROR;
+    }
+    return NRF_SUCCESS;
 }
 
 ret_code_t ntag_store_reset(uint8_t idx, ntag_t *ntag) {

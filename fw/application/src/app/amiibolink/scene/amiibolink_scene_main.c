@@ -34,39 +34,16 @@ static void ntag_generate_cb() {
     }
 }
 
-#ifdef AMIIBOLINK_STORE_FDS
 static void ntag_update(app_amiibolink_t *app, uint8_t index, ntag_t *p_ntag) {
-    ret_code_t err_code = ntag_store_write(index, p_ntag);
-    NRF_LOG_INFO("ntag_update: index=%d, err_code=%d", index, err_code);
-}
-
-static void ntag_reload(app_amiibolink_t *app, uint8_t index){
-    ntag_t ntag;
-    ret_code_t err_code = ntag_store_read(app->p_amiibolink_view->index, &ntag);
-    if (err_code == NRF_SUCCESS) {
-        ntag_emu_set_tag(&ntag);
-    }
-}
-#else
-#endif
-
-static void ntag_update(app_amiibolink_t *app, uint8_t index, ntag_t *p_ntag) {
-    char path[VFS_MAX_PATH_LEN] = {0};
-    sprintf(path, "/amiibolink/%02d.bin", index);
-    vfs_driver_t * p_driver = vfs_get_driver(VFS_DRIVE_EXT);
-    int32_t err_code = p_driver->write_file_data(path, p_ntag->data, NTAG_DATA_SIZE);
+    int32_t err_code = ntag_store_write(index, p_ntag);
     NRF_LOG_INFO("ntag_update: index=%d, err_code=%d", index, err_code);
 }
 
 static void ntag_reload(app_amiibolink_t *app, uint8_t index){
     ntag_t ntag = {0};
-    char path[VFS_MAX_PATH_LEN] = {0};
-
     memset(&ntag, 0, sizeof(ntag_t));
-    memset(path, 0, sizeof(path));
-    sprintf(path, "/amiibolink/%02d.bin", index);
-    vfs_driver_t * p_driver = vfs_get_driver(VFS_DRIVE_EXT);
-    int32_t err_code = p_driver->read_file_data(path, ntag.data, NTAG_DATA_SIZE);
+
+    int32_t err_code = ntag_store_read(index, &ntag);
     if (err_code >= NTAG_DATA_SIZE) {
         ntag_emu_set_tag(&ntag);
     }else{
@@ -74,11 +51,6 @@ static void ntag_reload(app_amiibolink_t *app, uint8_t index){
         ntag_store_new_rand(&ntag);
         ntag_emu_set_tag(&ntag);
     }
-}
-
-static void ntag_init(){
-    vfs_driver_t * p_driver = vfs_get_driver(VFS_DRIVE_EXT);
-    p_driver->create_dir("/amiibolink");
 }
 
 static void ntag_update_cb(ntag_event_type_t type, void *context, ntag_t *p_ntag) {
@@ -175,8 +147,8 @@ void amiibolink_scene_main_on_enter(void *user_data) {
     ble_amiibolink_set_version(p_settings->amiibo_link_ver);
     ble_nus_set_handler(ble_amiibolink_received_data, NULL);
 
-    ntag_init();
-    amiibo_helper_try_load_amiibo_keys_from_vfs();
+    ntag_store_init();
+    amiibo_helper_try_load_amiibo_keys();
 
     ble_amiibolink_init();
     ble_amiibolink_set_event_handler(amiibolink_scene_ble_event_handler, app);

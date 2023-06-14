@@ -19,6 +19,7 @@ void ntag_store_new_rand(ntag_t* ntag);
 //随机uuid数据(不修改其他)
 ret_code_t ntag_store_uuid_rand(ntag_t *ntag);
 
+int32_t ntag_store_load_keys(const uint8_t *data);
 ret_code_t ntag_store_read(uint8_t idx, ntag_t *ntag);
 ret_code_t ntag_store_write(uint8_t idx, ntag_t *ntag);
 ret_code_t ntag_store_reset(uint8_t idx, ntag_t *ntag);

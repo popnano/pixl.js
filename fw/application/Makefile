@@ -187,7 +187,6 @@ SRC_FILES += \
   $(PROJ_DIR)/mod/cwalk2.c \
   $(PROJ_DIR)/mod/vfs/vfs.c \
   $(PROJ_DIR)/mod/vfs/vfs_meta.c \
-  $(PROJ_DIR)/mod/vfs/vfs_driver_spiffs.c \
   $(PROJ_DIR)/mod/vfs/vfs_driver_lfs.c \
   $(PROJ_DIR)/mod/df/df_core.c \
   $(PROJ_DIR)/mod/df/df_proto_info.c \
@@ -257,11 +256,6 @@ SRC_FILES += \
   $(COMP_DIR)/amiitool/src/keygen.c \
   $(COMP_DIR)/amiitool/src/version.c \
   $(COMP_DIR)/tlsf/tlsf.c \
-  $(COMP_DIR)/spiffs/src/spiffs_cache.c \
-  $(COMP_DIR)/spiffs/src/spiffs_check.c \
-  $(COMP_DIR)/spiffs/src/spiffs_gc.c \
-  $(COMP_DIR)/spiffs/src/spiffs_hydrogen.c \
-  $(COMP_DIR)/spiffs/src/spiffs_nucleus.c \
   $(COMP_DIR)/littlefs/lfs.c \
   $(COMP_DIR)/littlefs/lfs_util.c \
   $(COMP_DIR)/cwalk/src/cwalk.c \
@@ -478,7 +472,6 @@ INC_FOLDERS += \
   $(COMP_DIR)/amiitool/include \
   $(COMP_DIR)/mlib \
   $(COMP_DIR)/u8g2/csrc \
-  $(COMP_DIR)/spiffs/src \
   $(COMP_DIR)/littlefs \
   $(COMP_DIR)/tlsf \
   $(COMP_DIR)/cwalk/include \

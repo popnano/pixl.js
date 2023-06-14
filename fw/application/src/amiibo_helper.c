@@ -3,7 +3,6 @@
 #include "nfc3d/amiibo.h"
 #include "nrf_log.h"
 #include "ntag_store.h"
-#include "vfs.h"
 
 #include "utils.h"
 
@@ -26,14 +25,10 @@ static const uint8_t DynLock[4] = {0x01, 0x00, 0x0F, 0xBD};// 0x208
 static const uint8_t Cfg0[4] = {0x00, 0x00, 0x00, 0x04};// 0x20C
 static const uint8_t Cfg1[4] = {0x5F, 0x00, 0x00, 0x00};// 0x210
 
-void amiibo_helper_get_uuid(ntag_t *ntag, uint8_t *uid1) {
-    uid1[0] = ntag->data[0];
-    uid1[1] = ntag->data[1];
-    uid1[2] = ntag->data[2];
-    uid1[3] = ntag->data[4];
-    uid1[4] = ntag->data[5];
-    uid1[5] = ntag->data[6];
-    uid1[6] = ntag->data[7];
+void amiibo_helper_rand_uuid(uint8_t *uuid) {
+    ret_code_t err_code = utils_rand_bytes(uuid, 6);
+    VERIFY_SUCCESS(err_code);
+    uuid[0] = 0x4; // fixed
 }
 
 void amiibo_helper_replace_uuid(uint8_t *buffer, const uint8_t uuid[]) {
@@ -97,31 +92,12 @@ ret_code_t amiibo_helper_load_keys(const uint8_t *data) {
 
 bool amiibo_helper_is_key_loaded() { return amiibo_keys_loaded; }
 
-ret_code_t amiibo_helper_sign_new_ntag(ntag_t *old_ntag, ntag_t *new_ntag) {
-    // decrypt old amiibo
-    uint8_t modified[NTAG215_SIZE];
-    uint8_t new_uuid[UUID_SIZE];
-    if (!nfc3d_amiibo_unpack(&amiibo_keys, old_ntag->data, modified)) {
-        return NRF_ERROR_INVALID_DATA;
-    }
-
-    // encrypt
-    amiibo_helper_get_uuid(new_ntag, new_uuid);
-    amiibo_helper_replace_uuid(modified, new_uuid);
-
-    nfc3d_amiibo_pack(&amiibo_keys, modified, new_ntag->data);
-
-    return NRF_SUCCESS;
-}
-
 ret_code_t amiibo_helper_rand_amiibo_uuid(ntag_t *ntag) {
-    ret_code_t err_code;
-    ntag_t ntag_new;
-    ntag_t *ntag_current = ntag;
+    uint8_t new_uuid[UUID_SIZE];
+    uint8_t modified[NTAG215_SIZE];
 
-    memcpy(&ntag_new, ntag_current, sizeof(ntag_t));
-
-    if (!is_valid_amiibo_ntag(ntag_current)) {
+    // check data valid
+    if (!is_valid_amiibo_ntag(ntag)) {
         return NRF_ERROR_INVALID_DATA;
     }
 
@@ -129,17 +105,18 @@ ret_code_t amiibo_helper_rand_amiibo_uuid(ntag_t *ntag) {
         return NRF_ERROR_INVALID_DATA;
     }
 
-    err_code = ntag_store_uuid_rand(&ntag_new);
-    if(err_code != NRF_SUCCESS){
-        return err_code;
+    // decrypt old amiibo
+    if (!nfc3d_amiibo_unpack(&amiibo_keys, ntag->data, modified)) {
+        return NRF_ERROR_INVALID_DATA;
     }
 
+    // random uuid
+    amiibo_helper_rand_uuid(new_uuid);
+    amiibo_helper_replace_uuid(modified, new_uuid);
+
     // sign new
-    err_code = amiibo_helper_sign_new_ntag(ntag_current, &ntag_new);
-    if (err_code == NRF_SUCCESS) {
-        memcpy(ntag, &ntag_new, sizeof(ntag_t));
-    }
-    return err_code;
+    nfc3d_amiibo_pack(&amiibo_keys, modified, ntag->data);
+    return NRF_SUCCESS;
 }
 
 ret_code_t amiibo_helper_generate_amiibo(uint32_t head, uint32_t tail, ntag_t* ntag) {
@@ -148,7 +125,7 @@ ret_code_t amiibo_helper_generate_amiibo(uint32_t head, uint32_t tail, ntag_t* n
     }
     // 随机uuid
     uint8_t uuid[UUID_SIZE];
-    ntag_store_new_rand(ntag);
+    ntag_store_uuid_rand(ntag);
     amiibo_helper_get_uuid(ntag, uuid);
 
     uint8_t modified[NTAG215_SIZE];
@@ -163,11 +140,10 @@ ret_code_t amiibo_helper_generate_amiibo(uint32_t head, uint32_t tail, ntag_t* n
     return NRF_SUCCESS;
 }
 
-void amiibo_helper_try_load_amiibo_keys_from_vfs() {
-    if (!amiibo_helper_is_key_loaded() && vfs_drive_enabled(VFS_DRIVE_EXT)) {
+void amiibo_helper_try_load_amiibo_keys() {
+    if (!amiibo_helper_is_key_loaded()) {
         uint8_t key_data[160];
-        vfs_driver_t *p_driver = vfs_get_driver(VFS_DRIVE_EXT);
-        int32_t err = p_driver->read_file_data("/key_retail.bin", key_data, sizeof(key_data));
+        int32_t err = ntag_store_load_keys(key_data);
         NRF_LOG_INFO("amiibo key read: %d", err);
         if (err == sizeof(key_data)) {
             ret_code_t ret = amiibo_helper_load_keys(key_data);
@@ -179,13 +155,12 @@ void amiibo_helper_try_load_amiibo_keys_from_vfs() {
 }
 
 bool is_valid_amiibo_ntag(const ntag_t *ntag) {
-    uint32_t head = to_little_endian_int32(&ntag->data[84]);
-    uint32_t tail = to_little_endian_int32(&ntag->data[88]);
-
     if(ntag->data[0]!= 0x4) {
         return false;
     }
-
+    
+    uint32_t head = to_little_endian_int32(&ntag->data[84]);
+    uint32_t tail = to_little_endian_int32(&ntag->data[88]);
     const amiibo_data_t *amd = find_amiibo_data(head, tail);
     if (amd != NULL) {
         return true;
