@@ -9,6 +9,8 @@
 enum settings_main_menu_t {
     SETTINGS_MAIN_MENU_VERSION,
     SETTINGS_MAIN_MENU_BACK_LIGHT,
+    SETTINGS_MAIN_MENU_MIRROR,
+    SETTINGS_MAIN_MENU_CONTRAST,
     SETTINGS_MAIN_MENU_LI_MODE,
     SETTINGS_MAIN_MENU_ENABLE_HIBERNATE,
     SETTINGS_MAIN_MENU_SKIP_DRIVER_SELECT,
@@ -31,6 +33,10 @@ static void settings_scene_main_list_view_on_selected(mui_list_view_event_t even
         mui_scene_dispatcher_next_scene(app->p_scene_dispatcher, SETTINGS_SCENE_LCD_BACKLIGHT);
         break;
 
+    case SETTINGS_MAIN_MENU_CONTRAST:
+        mui_scene_dispatcher_next_scene(app->p_scene_dispatcher, SETTINGS_SCENE_LCD_CONTRAST);
+        break;
+
     case SETTINGS_MAIN_MENU_VERSION:
         mui_scene_dispatcher_next_scene(app->p_scene_dispatcher, SETTINGS_SCENE_VERSION);
         break;
@@ -48,6 +54,16 @@ static void settings_scene_main_list_view_on_selected(mui_list_view_event_t even
         sprintf(txt, "自动选择存储 [%s]", p_settings->skip_driver_select ? "开" : "关");
         string_set_str(p_item->text, txt);
         mui_update(mui());
+        break;
+
+    case SETTINGS_MAIN_MENU_MIRROR:
+        if (p_settings->lcd_mirror == 0) p_settings->lcd_mirror = 1;
+        else p_settings->lcd_mirror = 0;
+        sprintf(txt, "镜像显示 [%s]", (p_settings->lcd_mirror==1) ? "开" : "关");
+        string_set_str(p_item->text, txt);
+        //mui_update(mui());   
+        mui_t *p_mui = mui();
+        mui_u8g2_init(&p_mui->u8g2);     
         break;
 
     case SETTINGS_MAIN_MENU_LI_MODE:
@@ -95,6 +111,9 @@ void settings_scene_main_on_enter(void *user_data) {
     }
     mui_list_view_add_item(app->p_list_view, 0xe1c8, txt, (void *)SETTINGS_MAIN_MENU_BACK_LIGHT);
 
+    sprintf(txt, "对比度 [%d%%]", p_settings->lcd_contrast);    
+    mui_list_view_add_item(app->p_list_view, 0xe1e6, txt, (void *)SETTINGS_MAIN_MENU_CONTRAST);
+
     sprintf(txt, "LiPO电池 [%s]", p_settings->bat_mode ? "开" : "关");
     mui_list_view_add_item(app->p_list_view, 0xe08f, txt, (void *)SETTINGS_MAIN_MENU_LI_MODE);
 
@@ -103,6 +122,9 @@ void settings_scene_main_on_enter(void *user_data) {
 
     sprintf(txt, "快速唤醒 [%s]", p_settings->hibernate_enabled ? "开" : "关");
     mui_list_view_add_item(app->p_list_view, 0xe232, txt, (void *)SETTINGS_MAIN_MENU_ENABLE_HIBERNATE);
+
+    sprintf(txt, "镜像显示 [%s]", (p_settings->lcd_mirror==1) ? "开" : "关");
+    mui_list_view_add_item(app->p_list_view, 0xe16f, txt, (void *)SETTINGS_MAIN_MENU_MIRROR);
 
     sprintf(txt, "休眠时间 [%ds]", nrf_pwr_mgmt_get_timeout());
     mui_list_view_add_item(app->p_list_view, 0xe1c9, txt, (void *)SETTINGS_MAIN_MENU_SLEEP_TIMEOUT);

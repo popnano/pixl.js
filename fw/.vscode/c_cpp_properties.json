@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "D:/work/vscode/pixl.js/pixl.js/fw/application/src/app/settings/scene/**",
+                "D:/work/vscode/arm-gnu-toolchain-12.2.rel1-mingw-w64-i686-arm-none-eabi/**",
+                "/opt/nRF5_SDK_17.1.0_ddde560/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "compilerPath": "D:\\MinGW\\mingw64\\bin\\gcc.exe",
+            "cStandard": "c17",
+            "cppStandard": "gnu++14",
+            "intelliSenseMode": "windows-gcc-x64",
+            "configurationProvider": "ms-vscode.makefile-tools"
+        }
+    ],
+    "version": 4
+}
