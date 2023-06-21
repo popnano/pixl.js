@@ -245,6 +245,7 @@ SRC_FILES += \
   $(PROJ_DIR)/app/settings/scene/settings_scene_version.c \
   $(PROJ_DIR)/app/settings/scene/settings_scene_sleep_timeout.c \
   $(PROJ_DIR)/app/settings/scene/settings_scene_lcd_backlight.c \
+  $(PROJ_DIR)/app/settings/scene/settings_scene_lcd_contrast.c \
   $(PROJ_DIR)/hal/hal_nfc_t2t.c \
   $(PROJ_DIR)/sdk/pwr_mgmt/nrf_pwr_mgmt.c \
   $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT.c \
@@ -612,7 +613,7 @@ sdk_config:
 	java -jar $(CMSIS_CONFIG_TOOL) $(SDK_CONFIG_FILE)
 
 version:
-	@cd ../ && python3 scripts/version_gen.py
+	@cd ../ && python scripts/version_gen.py
 
 settingsgen:
 	nrfutil settings generate --family NRF52 --application $(OUTPUT_DIRECTORY)/pixljs.hex --application-version $(APP_VERSION) --bootloader-version 1 --bl-settings-version 1 $(OUTPUT_DIRECTORY)/settings.hex

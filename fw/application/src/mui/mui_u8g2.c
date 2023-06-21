@@ -189,10 +189,22 @@ void mui_u8g2_init(u8g2_t *p_u8g2) {
     nrf_gpio_cfg_output(LCD_DC_PIN);
     nrf_gpio_cfg_output(LCD_BL_PIN);
     nrf_gpio_pin_clear(LCD_BL_PIN);
+    settings_data_t *p_settings = settings_get_data();
 
-    u8g2_Setup_st7567_enh_dg128064_f(p_u8g2, U8G2_R0, u8x8_HW_com_spi_nrf52832, u8g2_nrf_gpio_and_delay_spi_cb);
-
+    //用老王2.8寸绿屏时，下面的U8G2_R0要改成U8G2_MIRROR，否则显示是镜像的。
+    if(p_settings->lcd_mirror == 0)
+        u8g2_Setup_st7567_enh_dg128064_f(p_u8g2, U8G2_R0, u8x8_HW_com_spi_nrf52832, u8g2_nrf_gpio_and_delay_spi_cb);
+    else
+        u8g2_Setup_st7567_enh_dg128064_f(p_u8g2, U8G2_MIRROR, u8x8_HW_com_spi_nrf52832, u8g2_nrf_gpio_and_delay_spi_cb);
+    //老王2.8元3.6寸屏幕驱动
+    //u8g2_Setup_st7565_lx12864_1(p_u8g2, U8G2_R0, u8x8_HW_com_spi_nrf52832, u8g2_nrf_gpio_and_delay_spi_cb);
     u8g2_InitDisplay(p_u8g2);
+    //u8g2_SetContrast(p_u8g2, 140); //用老王1.5元1.2寸屏时，需要加上此句，否则显示不清楚
+    //u8g2_SetContrast(p_u8g2, 200); //用老王2.8元3.6寸屏时，需要加上此句，否则显示不大清楚
+    u8g2_SetContrast(p_u8g2, p_settings->lcd_contrast);
+    u8g2_SendF(p_u8g2, "c", 0x40|32);  //用老王2.8元3.6寸屏时，需加上此句，否则显示上下错位
+
+    //u8g2_InitDisplay(p_u8g2);  这句话取消注释的话，老王2。8元3。6寸屏初始化语句不起作用，仍会显示上下错位。
     u8g2_SetPowerSave(p_u8g2, 0);
 
     pwm_init();

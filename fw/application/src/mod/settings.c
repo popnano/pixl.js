@@ -14,7 +14,9 @@ settings_data_t m_settings_data = {.backlight = 0,
                                    .bat_mode = 0,
                                    .amiibo_link_ver = BLE_AMIIBOLINK_VER_V1,
                                    .hibernate_enabled = false,
-                                   .show_mem_usage = false};
+                                   .show_mem_usage = false,
+                                   .lcd_mirror = 0,
+                                   .lcd_contrast = 170};
 
 static vfs_driver_t *get_enabled_vfs_driver() {
     if (vfs_drive_enabled(VFS_DRIVE_EXT)) {
@@ -48,6 +50,8 @@ static void validate_settings() {
     BOOL_VALIDATE(m_settings_data.auto_gen_amiibolink, 0);
     BOOL_VALIDATE(m_settings_data.backlight, 0);
     INT8_VALIDATE(m_settings_data.lcd_backlight, 0, 100, 0);
+    INT8_VALIDATE(m_settings_data.lcd_mirror, 0, 1, 0);
+    INT8_VALIDATE(m_settings_data.lcd_contrast, 200, 255, 170); //设置对比度默认值170，最小值200，最大值255
 }
 
 int32_t settings_init() {
