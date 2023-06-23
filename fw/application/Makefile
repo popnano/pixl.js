@@ -615,7 +615,7 @@ sdk_config:
 version:
 	@cd ../ && python scripts/version_gen.py
 
-settingsgen:
+settingsgen: version
 	nrfutil settings generate --family NRF52 --application $(OUTPUT_DIRECTORY)/pixljs.hex --application-version $(APP_VERSION) --bootloader-version 1 --bl-settings-version 1 $(OUTPUT_DIRECTORY)/settings.hex
 
 ota: 

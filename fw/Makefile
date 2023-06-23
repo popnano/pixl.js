@@ -6,7 +6,8 @@ bl:
 	@$(MAKE) -C bootloader/
 
 app:
-	@$(MAKE) -C application/
+	@$(MAKE) -C application/ full
+	
 
 clean:
 	@rm -rf _build/
